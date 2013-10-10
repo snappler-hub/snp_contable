@@ -1,0 +1,2 @@
+class LedgerAccountPatrimonioNeto < LedgerAccount
+end

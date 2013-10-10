@@ -1,0 +1,2 @@
+class LedgerAccountPasivo < LedgerAccount
+end

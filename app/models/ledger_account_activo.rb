@@ -1,0 +1,2 @@
+class LedgerAccountActivo < LedgerAccount
+end

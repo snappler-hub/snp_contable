@@ -1,0 +1,2 @@
+class LedgerAccountResultadoNegativo < LedgerAccount
+end

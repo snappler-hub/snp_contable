@@ -1,0 +1,43 @@
+= SnapplerContable
+
+Esta gema agrega a una aplicacion la capacidad de manejar cuentas contables con el modelo teorico economico.
+
+== Instalacion
+
+Agregar esta linea al Gemfile
+
+    gem "snappler_contable"
+
+Ejecutar
+
+    $ bundle install
+
+Después de instalar se deben correr estos comandos
+
+    $ rails g snappler_contable:initializer
+    $ rails g snappler_contable:migrate
+    $ rake db:migrate  
+
+Esto va a crear el achivo:
+
+    config/initializers/snappler_contable.rb
+
+Donde se tienen que agregar todas las operaciones contables se van a ejecutar en el sistema.
+
+Tambien va a crear la migracion:
+
+    aaaammdd_snappler_contable_migrate.rb
+
+Que crea la tabla de cuentas, de movimientos y de asientos.
+Se crean 5 registros en la tabla LedgerAccounts que son necesarios para el sistema:
+
+    LedgerAccountActivo : Activo
+    LedgerAccountPasivo : Pasivo
+    LedgerAccountPatrimonioNeto : Patrimonio Neto
+    LedgerAccountResultadoPositivo : Resultado Positivo
+    LedgerAccountResultadoNegativo : Resultado Negativo
+
+Luego se crean 3 cuentas más, indicando como cuenta padre alguna de las cuentas existentes.
+Esta 3 estan solo como ejemplo, y se deben reemplazar por las cuentas que sean necesarias en la aplicacion actual.
+    
+
