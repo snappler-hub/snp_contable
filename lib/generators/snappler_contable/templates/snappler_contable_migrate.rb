@@ -58,5 +58,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
   def self.down
     drop_table :ledger_accounts
     drop_table :ledger_moves
+    drop_table :ledger_entries
+    drop_table :ledger_currencies
   end
 end

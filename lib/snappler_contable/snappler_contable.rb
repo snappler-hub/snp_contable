@@ -1,6 +1,14 @@
 
 module SnapplerContable
 
+  def self.default_currency=(default_currency)
+    @my_default_currrency = default_currency
+  end
+
+  def self.default_currency
+    @my_default_currrency
+  end
+
   def self.valid_operations=(operations)
     @my_valid_operations = operations
   end
@@ -23,48 +31,86 @@ module SnapplerContable
     end
   end
 
-  def self.extract_accounts(accounts_array, operation)
+  def self.extract_accounts(moves_array, operation, debe_haber)
     res_accounts = []
-    accounts_array.each do |acc|
-      if (acc.class.to_s == 'LedgerAccount') or ((acc.class.superclass.to_s == 'LedgerAccount'))
-        res_accounts << acc
-      else
-        if operation.nil?
-          raise "No se puede extraer la cuenta del objeto #{acc.class.to_s} con operation == nil"
+    moves_array.each do |move|
+      move[:dh] = debe_haber
+      if move.key? :account
+        acc = move[:account]
+        if (acc.class.to_s == 'LedgerAccount') or ((acc.class.superclass.to_s == 'LedgerAccount'))
+          res_accounts << move
         else
-          unless acc.nil?
-            if acc.respond_to? "snappler_contable_active?"
-              if acc.snappler_contable_active?
-                res_accounts << acc.get_ledger_account_by_operation(operation)
+          if operation.nil?
+            raise "No se puede extraer la cuenta del objeto #{acc.class.to_s} con operation == nil"
+          else
+            unless acc.nil?
+              if acc.respond_to? "snappler_contable_active?"
+                if acc.snappler_contable_active?
+                  move[:account] = acc.get_ledger_account_by_operation(operation)
+                  res_accounts << move
+                else
+                  raise "La clase #{acc.class.to_s} no implementa el modulo contable."
+                end 
               else
                 raise "La clase #{acc.class.to_s} no implementa el modulo contable."
-              end 
+              end
             else
-              raise "La clase #{acc.class.to_s} no implementa el modulo contable."
-            end
-          else
-            raise "Se paso como cuenta un objeto Nil"
-          end 
-        end      
+              raise "Se paso como cuenta un objeto Nil"
+            end 
+          end      
+        end
+      else
+        raise "El hash de movimiento no tiene :account - #{move}"
+      end
+      unless move.key? :value
+        raise "El hash de movimiento no tiene :value - #{move}"
       end
     end
     return res_accounts
   end
 
   def self.op(array_debe, array_haber, operation = nil)
-    debe_accounts = extract_accounts(array_debe, operation)
-    haber_accounts = extract_accounts(array_haber, operation)
-    puts "DEBE -------------------------------------------------------"
-    debe_accounts.each do |da|
-      puts "#{da.code_name} - #{da.class.to_s}"
+    debe_accounts = extract_accounts(array_debe, operation, true)
+    haber_accounts = extract_accounts(array_haber, operation, false)
+
+    total_debe = debe_accounts.inject(0){|init, move| init + move[:value] }
+    total_haber = haber_accounts.inject(0){|init, move| init + move[:value] }
+
+    if total_haber != total_debe
+      raise "Las sumas del DEBE y HABER son diferentes - debe: #{total_debe} haber: #{total_haber}"
     end
-    puts "HABER ------------------------------------------------------"
-    haber_accounts.each do |da|
-      puts "#{da.code_name} - #{da.class.to_s}"
+
+    all_moves = debe_accounts + haber_accounts
+
+    #verificando si todos los movimientos tienen orden
+    if all_moves.inject(true){|res, move| res & (move.key? :order)}
+      all_moves.sort!{|a, b| a[:order] <=> b[:order]}
     end
-    puts "OPER -------------------------------------------------------"
-    puts operation.to_s
-    return 'OK'
+
+    dc = LedgerCurrency.find_by_code(SnapplerContable.default_currency) 
+
+    le = LedgerEntry.create
+    all_moves.each do |m|
+      if m.key? :currency
+        if m[:currency].is_a? Numeric
+          m[:currency] = LedgerCurrency.find(m[:currency]) 
+        end
+        unless m.key? :currency_ratio
+          m[:currency_ratio] = 1
+        end
+      else
+        m[:currency] = dc
+        m[:currency_ratio] = 1
+      end
+      le.ledger_moves.build(ledger_account: m[:account], value: m[:value], dh: m[:dh], ledger_currency: m[:currency], currency_ratio: m[:currency_ratio])
+    end
+
+    if le.save
+      le
+    else
+      le.destroy
+      raise "Fallo la creacion del movimiento: #{all_moves}"
+    end
   end  
 
 end
