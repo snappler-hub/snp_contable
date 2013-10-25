@@ -44,81 +44,87 @@ def act_as_snappler_contable(config_hash = nil)
 
   if config_hash.key? :account_by_operation
     @my_op_account_hash = config_hash[:account_by_operation]
-          #chequea que todas las operaciones existan
-          valid_ops = SnapplerContable.valid_operations
-          @my_op_account_hash.each_pair do |oper, acc|
-            unless valid_ops.include? oper
-              raise "La clase #{self.name} declara la operacion ':#{oper}', que no existe como operacion valida en 'config/initializers/snappler_contable.rb'"
-            end
-            unless @my_ledger_accounts.include? acc
-              raise "La clase #{self.name} indica: ':#{oper} => :#{acc}', pero la cuenta '#{acc}' no esta incluida en 'act_as_snappler_contable{:accounts => []}'"
-            end
-          end          
-        else
-          raise "La clase '#{self.class}' no declara cuenta por operacion en 'act_as_snappler_contable{:account_by_operation => []}'"
-        end
-
+    #chequea que todas las operaciones existan
+    valid_ops = SnapplerContable.valid_operations
+    @my_op_account_hash.each_pair do |oper, acc|
+      unless valid_ops.include? oper
+        raise "La clase #{self.name} declara la operacion ':#{oper}', que no existe como operacion valida en 'config/initializers/snappler_contable.rb'"
       end
-
-
-
-      def get_my_accounts_by_operation
-        @my_op_account_hash
-      end    
-
-      def get_my_ledger_accounts
-        @my_ledger_accounts
+      unless @my_ledger_accounts.include? acc
+        raise "La clase #{self.name} indica: ':#{oper} => :#{acc}', pero la cuenta '#{acc}' no esta incluida en 'act_as_snappler_contable{:accounts => []}'"
       end
+    end          
+  else
+    raise "La clase '#{self.class}' no declara cuenta por operacion en 'act_as_snappler_contable{:account_by_operation => []}'"
+  end
 
-      def get_snappler_contable_active
-        @snappler_contable_active
-      end
+end
 
+def get_my_accounts_by_operation
+  @my_op_account_hash
+end    
+
+def get_my_ledger_accounts
+  @my_ledger_accounts
+end
+
+def get_snappler_contable_active
+  @snappler_contable_active
+end
+
+end
+
+def children_accounts_ids
+  SnapplerContable.account_sub_tree(self).collect{|account| account.id}
+end
+
+def get_debe_haber
+  LedgerMove.where(:ledger_account_id => children_accounts_ids).group(:dh).sum(:value_int)
+end
+
+def snappler_contable_active?
+  self.class.get_snappler_contable_active
+end    
+
+def get_parent_belongs_to(ledger_account_code_name)
+  parent_belongs_to = self.class.get_my_ledger_accounts[ledger_account_code_name]
+
+  unless parent_belongs_to.nil?
+    unless self.respond_to? parent_belongs_to
+      raise "No existe la relacion 'belongs_to :#{parent_belongs_to}' en la clase #{self.class}"
     end
 
-    def snappler_contable_active?
-      self.class.get_snappler_contable_active
-    end    
+    if eval("self.#{parent_belongs_to.to_s}").nil?
+      raise "El objeto de la relacion belongs_to :#{parent_belongs_to} es nil. Class #{self.class} belongs_to :#{parent_belongs_to} - id: #{self.id}"
+    end        
 
-    def get_parent_belongs_to(ledger_account_code_name)
-      parent_belongs_to = self.class.get_my_ledger_accounts[ledger_account_code_name]
-      
-      unless parent_belongs_to.nil?
-        unless self.respond_to? parent_belongs_to
-          raise "No existe la relacion 'belongs_to :#{parent_belongs_to}' en la clase #{self.class}"
-        end
+    parent_object = eval("self.#{parent_belongs_to.to_s}")
 
-        if eval("self.#{parent_belongs_to.to_s}").nil?
-          raise "El objeto de la relacion belongs_to :#{parent_belongs_to} es nil. Class #{self.class} belongs_to :#{parent_belongs_to} - id: #{self.id}"
-        end        
+    return parent_belongs_to, parent_object
 
-        parent_object = eval("self.#{parent_belongs_to.to_s}")
+  else
+    return nil, nil
+  end
+end
 
-        return parent_belongs_to, parent_object
+def get_name_and_code_name(ledger_account_code_name)
 
-      else
-        return nil, nil
-      end
-    end
+  parent_belongs_to, parent_object = get_parent_belongs_to(ledger_account_code_name)
+  if parent_belongs_to.nil?
 
-    def get_name_and_code_name(ledger_account_code_name)
+    name_aux = ledger_account_code_name.to_s.titleize + " "
+    code_name_aux = name_aux
+  else
 
-      parent_belongs_to, parent_object = get_parent_belongs_to(ledger_account_code_name)
-      if parent_belongs_to.nil?
+    parent_object_account = parent_object.get_ledger_account(ledger_account_code_name)
+    parent_name_aux, parent_code_name_aux = parent_object.get_name_and_code_name(ledger_account_code_name)
 
-        name_aux = ledger_account_code_name.to_s.titleize + " "
-        code_name_aux = name_aux
-      else
+    name_aux = parent_name_aux + " "
+    code_name_aux = parent_code_name_aux + " "
+  end
 
-        parent_object_account = parent_object.get_ledger_account(ledger_account_code_name)
-        parent_name_aux, parent_code_name_aux = parent_object.get_name_and_code_name(ledger_account_code_name)
-
-        name_aux = parent_name_aux + " "
-        code_name_aux = parent_code_name_aux + " "
-      end
-
-      name_aux += self.class.to_s
-      name_aux += ":"
+  name_aux += self.class.to_s
+  name_aux += ":"
 
       #TODO configuracion del campo "name" para que pueda tomar otro campo para nombre
       name_aux += (self.respond_to?(:name)) ? self.name.to_s.titleize : self.id.to_s

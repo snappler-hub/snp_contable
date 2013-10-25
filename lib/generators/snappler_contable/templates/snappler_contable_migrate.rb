@@ -29,7 +29,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
     create_table :ledger_moves do |t|
       t.references :ledger_entry
       t.references :ledger_account
-      t.boolean :dh
+      t.string :dh, :limit => 1
       t.integer :value_int, :default => 0
       t.integer :value_dec, :default => 0
       t.references :ledger_currency

@@ -2,7 +2,11 @@
 module SnapplerContable
 
   def self.default_currency=(default_currency)
-    @my_default_currrency = default_currency
+    if ActiveRecord::Base.connection.table_exists? 'ledger_currencies'
+      @my_default_currrency = LedgerCurrency.find_by_code(default_currency) 
+    else
+      @my_default_currrency = nil
+    end
   end
 
   def self.default_currency
@@ -22,6 +26,12 @@ module SnapplerContable
   def self.accounts_tree
     tree = TreeNode.new(nil, true)
     tree.add_child_ledger_accounts(LedgerAccount.where(:master_ledger_account_id => 0))
+    return tree
+  end
+
+  def self.account_sub_tree(ledger_account)
+    tree = TreeNode.new(nil, true)
+    tree.add_child_ledger_accounts([ledger_account])
     return tree
   end
 
@@ -70,8 +80,8 @@ module SnapplerContable
   end
 
   def self.op(array_debe, array_haber, operation = nil)
-    debe_accounts = extract_accounts(array_debe, operation, true)
-    haber_accounts = extract_accounts(array_haber, operation, false)
+    debe_accounts = extract_accounts(array_debe, operation, 'D')
+    haber_accounts = extract_accounts(array_haber, operation, 'H')
 
     total_debe = debe_accounts.inject(0){|init, move| init + move[:value] }
     total_haber = haber_accounts.inject(0){|init, move| init + move[:value] }
@@ -87,7 +97,7 @@ module SnapplerContable
       all_moves.sort!{|a, b| a[:order] <=> b[:order]}
     end
 
-    dc = LedgerCurrency.find_by_code(SnapplerContable.default_currency) 
+    dc = SnapplerContable.default_currency
 
     le = LedgerEntry.create
     all_moves.each do |m|

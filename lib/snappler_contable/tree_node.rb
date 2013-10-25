@@ -1,5 +1,8 @@
 module SnapplerContable
   class TreeNode
+
+    include Enumerable
+
     attr_accessor :object, :childrens, :root
 
     def initialize(account, root=false)
@@ -29,5 +32,16 @@ module SnapplerContable
       res = res + @childrens.map{ |child| " " + child.to_s(indent + 4)}.join("\n")
       res.gsub("\n\n", "\n")
     end
+
+    def each(&block)
+      unless root
+        block.call object
+      end
+      childrens.each do |child|
+        child.each(&block)
+      end
+      self
+    end  
+
   end
 end
