@@ -1,10 +1,7 @@
 class LedgerAccountActivo < LedgerAccount
 
-  def saldo
-    dh_hash = get_debe_haber
-    debe = dh_hash["D"].to_i
-    haber = dh_hash["H"].to_i
-
-    puts "soy activo #{debe + haber}"
+  def process_saldo(debe, haber) 
+    debe - haber
   end
+  
 end

@@ -61,6 +61,24 @@ class LedgerAccount < ActiveRecord::Base
     self.save
   end
 
+  def children_accounts_ids
+    SnapplerContable.account_sub_tree(self).collect{|account| account.id}
+  end
+
+  #def get_debe_haber
+  #  LedgerMove.where(:ledger_account_id => children_accounts_ids).group(:dh).sum(:value_int)
+  #end  
+
+  def saldo
+    dh_hash = LedgerMove.where(:ledger_account_id => children_accounts_ids).group(:dh).sum(:value_int)
+    debe = dh_hash["D"].to_i
+    haber = dh_hash["H"].to_i   
+    LedgerMove.format_value(process_saldo(debe, haber))
+  end
+
+  def process_saldo
+    raise "Este metodo solo se tiene que implementar en las subclases"
+  end
 
 end
 

@@ -42,25 +42,22 @@ module SnapplerContable
   end
 
   def self.extract_accounts(moves_array, operation, debe_haber)
+    
     res_accounts = []
     moves_array.each do |move|
       move[:dh] = debe_haber
       if move.key? :account
         acc = move[:account]
-        if (acc.class.to_s == 'LedgerAccount') or ((acc.class.superclass.to_s == 'LedgerAccount'))
+        if (acc.class.to_s == 'LedgerAccount') or (acc.class.superclass.to_s == 'LedgerAccount')
           res_accounts << move
         else
           if operation.nil?
             raise "No se puede extraer la cuenta del objeto #{acc.class.to_s} con operation == nil"
           else
             unless acc.nil?
-              if acc.respond_to? "snappler_contable_active?"
-                if acc.snappler_contable_active?
-                  move[:account] = acc.get_ledger_account_by_operation(operation)
-                  res_accounts << move
-                else
-                  raise "La clase #{acc.class.to_s} no implementa el modulo contable."
-                end 
+              if acc.respond_to? "get_ledger_account_by_operation"                
+                move[:account] = acc.get_ledger_account_by_operation(operation)
+                res_accounts << move                                
               else
                 raise "La clase #{acc.class.to_s} no implementa el modulo contable."
               end
@@ -79,9 +76,15 @@ module SnapplerContable
     return res_accounts
   end
 
-  def self.op(array_debe, array_haber, operation = nil)
-    debe_accounts = extract_accounts(array_debe, operation, 'D')
-    haber_accounts = extract_accounts(array_haber, operation, 'H')
+  def self.op(array_debe, array_haber, operation_debe = nil, operation_haber = nil)
+
+    if operation_haber.nil?
+      operation_haber = operation_debe
+    end
+
+    #TODO Verificar si viene el mismo objeto en el debe y el haber y pedir DOS operaciones
+    debe_accounts = extract_accounts(array_debe, operation_debe, 'D')
+    haber_accounts = extract_accounts(array_haber, operation_haber, 'H')
 
     total_debe = debe_accounts.inject(0){|init, move| init + move[:value] }
     total_haber = haber_accounts.inject(0){|init, move| init + move[:value] }

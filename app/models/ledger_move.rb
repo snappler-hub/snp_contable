@@ -5,6 +5,12 @@ class LedgerMove < ActiveRecord::Base
 
   attr_accessible :currency_ratio, :dh, :value, :ledger_account, :ledger_currency, :currency_ratio
 
+  DIVISOR = 100.0
+
+  def self.format_value(value)
+    value / DIVISOR
+  end
+
   def value=(val)
     if val.is_a? Numeric
       write_attribute :value_int, (val * 100).to_i
@@ -15,6 +21,6 @@ class LedgerMove < ActiveRecord::Base
 
   def value
     value_int = read_attribute :value_int
-    value_int / 100.0
+    self.class.format_value(value_int)
   end
 end

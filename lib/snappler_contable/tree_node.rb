@@ -24,7 +24,7 @@ module SnapplerContable
     end
 
     def name
-      root ? 'ROOT' : "#{object.code} : #{object.name}"
+      root ? 'ROOT' : "#{object.code} : #{object.name} (#{object.id})"
     end
 
     def to_s(indent=0)

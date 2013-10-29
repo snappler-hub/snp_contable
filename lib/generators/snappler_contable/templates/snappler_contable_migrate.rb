@@ -20,12 +20,6 @@ class SnapplerContableMigrate < ActiveRecord::Migration
     arp = LedgerAccountResultadoPositivo.create(name: 'Resultado Positivo', code: '4', master_ledger_account_id: '0')
     arn = LedgerAccountResultadoNegativo.create(name: 'Resultado Negativo', code: '5', master_ledger_account_id: '0')
 
-    #Estas son solo de ejemplo
-    activo_corriente = LedgerAccountActivo.create(name: 'Activo Corriente', master_ledger_account: aa )
-    disponibilidades = LedgerAccountActivo.create(name: 'Disponibilidades', master_ledger_account: activo_corriente )
-    proveedores = LedgerAccountActivo.create(name: 'Proveedores', master_ledger_account: disponibilidades )    
-
-
     create_table :ledger_moves do |t|
       t.references :ledger_entry
       t.references :ledger_account
