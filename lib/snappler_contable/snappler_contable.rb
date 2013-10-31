@@ -51,12 +51,17 @@ module SnapplerContable
         if (acc.class.to_s == 'LedgerAccount') or (acc.class.superclass.to_s == 'LedgerAccount')
           res_accounts << move
         else
-          if operation.nil?
+          if move.key? :operation
+            oper = move[:operation]
+          else
+            oper = operation
+          end
+          if oper.nil?
             raise "No se puede extraer la cuenta del objeto #{acc.class.to_s} con operation == nil"
           else
             unless acc.nil?
               if acc.respond_to? "get_ledger_account_by_operation"                
-                move[:account] = acc.get_ledger_account_by_operation(operation)
+                move[:account] = acc.get_ledger_account_by_operation(oper)
                 res_accounts << move                                
               else
                 raise "La clase #{acc.class.to_s} no implementa el modulo contable."

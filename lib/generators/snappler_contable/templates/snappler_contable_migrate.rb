@@ -46,7 +46,6 @@ class SnapplerContableMigrate < ActiveRecord::Migration
       t.timestamps
     end    
     LedgerCurrency.create(name: 'Peso', code: 'ARS')
-
   end
 
   def self.down

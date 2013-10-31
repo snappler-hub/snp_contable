@@ -1,23 +1,33 @@
 class LedgerAccount < ActiveRecord::Base
-
-  attr_accessible :name, :code, :code_name, :master_ledger_account_id, :master_ledger_account, :contable
-
+  #--------------------------------------------- RELATIION
   belongs_to :contable, polymorphic: true
-
   has_many :child_ledger_accounts, :class_name => "LedgerAccount", :foreign_key => "master_ledger_account_id", :order => 'order_column'
-  belongs_to :master_ledger_account, :class_name => "LedgerAccount"  
-
-  default_scope order('order_column ASC')
-  
+  belongs_to :master_ledger_account, :class_name => "LedgerAccount" 
+  #--------------------------------------------- MISC
+  attr_accessible :name, :code, :code_name, :master_ledger_account_id, :master_ledger_account, :contable
+  #--------------------------------------------- VALIDATION
   validates :master_ledger_account_id, :presence => true
-
-  before_save :set_code_name
+  validates :code_name, :uniqueness => true
+  #--------------------------------------------- CALLBACK
   before_save :set_code
-
   after_create :set_order_column
+  #--------------------------------------------- SCOPES
+  default_scope order('order_column ASC')
+  #--------------------------------------------- METHODS
 
   def self.account(value)
     where(:code_name => value.to_s.snp_underscore).first
+  end
+
+  def add_child(name)
+    if self.persisted?    
+      self.class.create(name: name, master_ledger_account: self )    
+    else
+      if self.errors.count > 0
+        errores = " La cuenta '#{name}' no se pudo persistir porque sus campos no cumplen la validacion de LedgerAccount."
+      end
+      raise "La instancia debe estar persistida para poder agregar una cuenta hija." + errores.to_s
+    end
   end
 
   def set_code
@@ -36,12 +46,12 @@ class LedgerAccount < ActiveRecord::Base
     end
   end  
 
-
-  def set_code_name
+  def name=(value)
+    write_attribute :name, value
     if (read_attribute(:code_name)).blank?
       name_value = read_attribute(:name)
       write_attribute :code_name, name_value.snp_underscore
-    end
+    end    
   end
 
   def set_order_column
@@ -65,10 +75,6 @@ class LedgerAccount < ActiveRecord::Base
     SnapplerContable.account_sub_tree(self).collect{|account| account.id}
   end
 
-  #def get_debe_haber
-  #  LedgerMove.where(:ledger_account_id => children_accounts_ids).group(:dh).sum(:value_int)
-  #end  
-
   def saldo
     dh_hash = LedgerMove.where(:ledger_account_id => children_accounts_ids).group(:dh).sum(:value_int)
     debe = dh_hash["D"].to_i
@@ -79,6 +85,10 @@ class LedgerAccount < ActiveRecord::Base
   def process_saldo
     raise "Este metodo solo se tiene que implementar en las subclases"
   end
+
+  def accounts_tree
+    SnapplerContable.account_sub_tree(self)
+  end                     
 
 end
 

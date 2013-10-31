@@ -18,6 +18,7 @@ module SnapplerContable
 
     def copy_migrations
      migration_template "snappler_contable_migrate.rb", "db/migrate/snappler_contable_migrate.rb"
+     migration_template "snappler_contable_app_ledger_accounts.rb", "db/migrate/snappler_contable_app_ledger_accounts.rb"
     end
   end
 end

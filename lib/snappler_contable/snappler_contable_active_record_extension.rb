@@ -90,7 +90,7 @@ module SnapplerContable
             code_name_aux = name_aux
           else
 
-            parent_object_account = parent_object.get_ledger_account(ledger_account_code_name)
+            parent_object_account = parent_object.get_ledger_account_by_code_name(ledger_account_code_name)
             parent_name_aux, parent_code_name_aux = parent_object.get_name_and_code_name(ledger_account_code_name)
             name_aux = parent_name_aux + " "
             code_name_aux = parent_code_name_aux + " "
@@ -112,14 +112,14 @@ module SnapplerContable
             if ledger_account_code_name.blank?
               raise "La operacion ':#{operation.to_s}' no esta incluida como :account_by_operation en la sentencia 'act_as_snappler_contable' de la clase #{self.class.to_s.titleize}"
             else
-              return get_ledger_account(ledger_account_code_name)
+              return get_ledger_account_by_code_name(ledger_account_code_name)
             end
           else
             raise "La operacion ':#{operation.to_s}' no esta incluida como valid_operation en 'config/initializers/snappler_contable.rb'"
           end
         end 
 
-        define_method(:get_ledger_account) do |ledger_account_code_name|
+        define_method(:get_ledger_account_by_code_name) do |ledger_account_code_name|
           if self.class.get_my_ledger_accounts.include? ledger_account_code_name
             if self.persisted?
               name_aux, code_name_aux = get_name_and_code_name(ledger_account_code_name)
@@ -131,7 +131,7 @@ module SnapplerContable
                 if parent_belongs_to.nil?
                   master_ledger_account = LedgerAccount.find_by_code_name(ledger_account_code_name.to_s)
                 else
-                  master_ledger_account = parent_object.get_ledger_account(ledger_account_code_name)
+                  master_ledger_account = parent_object.get_ledger_account_by_code_name(ledger_account_code_name)
                 end
                 if not master_ledger_account.nil?
                   #uso la clase del padre para crear la cuenta de objeto
@@ -150,8 +150,12 @@ module SnapplerContable
           else
             raise "La clase '#{self.class.to_s.titleize}' no esta vinculada a la cuenta #{ledger_account_code_name.to_s}"
           end
-        end                   
+        end
 
+        define_method(:ledger_accounts) do          
+          res = self.class.get_my_ledger_accounts.map{|a| a.first}          
+          res.map{|acc_code_name| get_ledger_account_by_code_name(acc_code_name)}
+        end 
       end
 
       def get_my_accounts_by_operation
