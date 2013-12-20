@@ -100,6 +100,7 @@ Una vez creadas las cuentas del plan, quedaría (por ejemplo) así:
              5.3.1 : Arqueo negativo banco (27)
              5.3.2 : Arqueo negativo caja (28)
 
+(NOTA: el número entre paréntesis es el id del objeto)
 
 2) Un archivo de tipo 'initializer':
 	/config/initializers/snappler_contable.rb
@@ -276,6 +277,8 @@ Hay que tomarla del parametro ':account_by_operation' del act_as_snappler_contab
 
 Si el objeto está la "Colección movimientos debe" o "Colección movimientos haber", la operación se pasa como tercer parámetro.
 En caso de que haya objetos en "Coleccion movimientos debe" y "Colección movimientos haber" que deban extraerse con operaciones distintas, se pasan dos parámetros más, siendo el primero usado para la colección del debe y el segudo para el haber.
+
+Por último, respecto a las operaciones, si dentro de alguno las colecciones de movivientos hay objetos de los que se deben extraer cuentas con operaciones distintas, el hash de movimiento soporta el parámetro :operation.
 
 
 
