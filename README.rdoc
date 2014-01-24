@@ -265,10 +265,10 @@ Las colecciones de movimientos debe/haber tiene un formato análogo.
 Colección movimientos debe/haber:
 	[{account: LedgerAccount u objeto de clase act_as_snappler_contable,
 	  value: valor,
-	  order: orden del movimiento (opcional, ARS por defecto) (solo funciona si TODOS los movimientos tienen order),
-	  currency: id (integer) u objeto LedgerCurrency (opcional),
+	  order: orden del movimiento (opcional) (solo funciona si TODOS los movimientos tienen order),
+	  currency: id (integer) u objeto LedgerCurrency (opcional, ARS por defecto),
 	  currency_ratio: cotización de la moneda (opcional, 1 por defecto),
-	  operation: operacion para extraer cuenta contable, en caso de que account: sea objeto de clase act_as_snappler_contable }]
+	  operation: operacion para extraer cuenta contable, en caso de que account: sea objeto de clase act_as_snappler_contable (opcional) }]
 
 La suma de los values de "Colección movimientos debe" y "Colección movimientos haber" deben ser iguales.
 
