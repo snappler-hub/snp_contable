@@ -75,6 +75,11 @@ class LedgerAccount < ActiveRecord::Base
     SnapplerContable.account_sub_tree(self).collect{|account| account.id}
   end
 
+  def saldo
+    #alias para compatibilidad
+    balance
+  end
+
   def balance
     bal = LedgerAccount.where(:id => children_accounts_ids).sum(:balance_sum)    
     LedgerMove.format_value(bal)
