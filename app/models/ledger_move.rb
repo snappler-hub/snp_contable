@@ -11,16 +11,20 @@ class LedgerMove < ActiveRecord::Base
     value / DIVISOR
   end
 
+  def self.unformat_value(value)    
+    (value * DIVISOR).to_i
+  end  
+
   def value=(val)
     if val.is_a? Numeric
-      write_attribute :value_int, (val * 100).to_i
+      write_attribute :value, self.class.unformat_value(val)
     else
       raise "El valor debe ser un numero"
     end
   end
 
   def value
-    value_int = read_attribute :value_int
-    self.class.format_value(value_int)
+    value_formated = read_attribute :value
+    self.class.format_value(value_formated)
   end
 end

@@ -1,6 +1,6 @@
 class LedgerAccountPatrimonioNeto < LedgerAccount
 
-  def process_saldo(debe, haber) 
-    haber - debe
-  end
+	def process_balance(debe, haber) 
+		haber - debe
+	end
 end
