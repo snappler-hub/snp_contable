@@ -123,6 +123,12 @@ class LedgerAccount < ActiveRecord::Base
     save
   end
 
+  def update_balance_destroy(value, dh)
+    #inverse operation
+    ops = {'D' => 'H', 'H' => 'D'}
+    update_balance(value, ops[dh])
+  end
+
   def accounts_tree
     SnapplerContable.account_sub_tree(self)
   end                     

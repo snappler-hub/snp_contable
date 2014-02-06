@@ -1,11 +1,35 @@
 class LedgerMove < ActiveRecord::Base
+  #--------------------------------------------- RELATION
   belongs_to :ledger_entry
   belongs_to :ledger_account
-  belongs_to :ledger_currency
-
+  belongs_to :ledger_currency  
+  #--------------------------------------------- MISC
   attr_accessible :currency_ratio, :dh, :value, :ledger_account, :ledger_currency, :currency_ratio
+  DIVISOR = 100.0  
+  #--------------------------------------------- VALIDATION
 
-  DIVISOR = 100.0
+  #--------------------------------------------- CALLBACK
+  after_create :update_balance_create
+  after_destroy :update_balance_destroy
+  after_update :update_balance_update
+
+  #--------------------------------------------- SCOPES
+
+  #--------------------------------------------- METHODS  
+
+  def update_balance_create
+    self.ledger_account.update_balance(value, dh)
+  end
+
+  def update_balance_destroy
+    self.ledger_account.update_balance_destroy(value, dh)
+  end  
+
+  def update_balance_update    
+    self.ledger_account.update_balance_destroy( self.class.format_value(value_was), dh)
+    self.ledger_account.update_balance(value, dh)
+  end
+
 
   def self.format_value(value)
     value / DIVISOR

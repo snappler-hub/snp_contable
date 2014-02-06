@@ -121,9 +121,6 @@ module SnapplerContable
     end
 
     if le.save
-      le.ledger_moves.each do |lm|
-        lm.ledger_account.update_balance(lm.value, lm.dh)        
-      end
       le
     else
       le.destroy
