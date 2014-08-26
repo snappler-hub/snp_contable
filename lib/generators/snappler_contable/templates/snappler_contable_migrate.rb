@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 class SnapplerContableMigrate < ActiveRecord::Migration
   def self.up
     create_table :ledger_accounts do |t|
       t.string :name
-      t.integer :balance_sum, :default => 0
+      t.string :balance_sum
       t.string :code
       t.string :code_name
       t.integer :order_column
@@ -28,6 +29,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
       t.integer :value, :default => 0
       t.references :ledger_currency
       t.float :currency_ratio
+      t.date :date
 
       t.timestamps
     end
@@ -42,10 +44,12 @@ class SnapplerContableMigrate < ActiveRecord::Migration
     create_table :ledger_currencies do |t|
       t.string :name
       t.string :code
-
+      t.string :sym
       t.timestamps
     end    
-    LedgerCurrency.create(name: 'Peso', code: 'ARS')
+    LedgerCurrency.create(name: 'Peso', code: 'ARS', sym: '$')
+    LedgerCurrency.create(name: 'Dolar', code: 'DOL', sym: 'u$s')
+    LedgerCurrency.create(name: 'Euro', code: 'EUR', sym: '€')
   end
 
   def self.down
