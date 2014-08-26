@@ -1,6 +1,6 @@
 class LedgerAccountResultadoPositivo < LedgerAccount
 
 	def process_balance(debe, haber) 
-		haber - debe
+		debe.merge(haber){|key, oldval, newval| newval - oldval}
 	end  
 end

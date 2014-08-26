@@ -269,6 +269,8 @@ Devuelve el sub árbol de cuentas que baja desde la cuenta sobre la que se ejecu
 - objeto_act_as_snp_contable.ledger_accounts
 Devuelve un array con las cuentas contables (las crea si es necesario) vinculadas con el objeto.
 
+- objeto_act_as_snp_contable.get_ledger_account_by_code_name(:symbol)
+Devuelve la cuenta contable asocidada (las crea si es necesario) vinculadas con el objeto.
 
 = Operación contable
 
@@ -302,7 +304,32 @@ Por último, respecto a las operaciones, si dentro de alguno las colecciones de 
 
 
 
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------- v1.1
+FIXES
+    * El calculo ahora las operaciones se hacen en enteros Y DESPUES se transforman
+    * La funcion 'unformat_value(value)' de LedgerMove hace un round antes de tl .to_i, elimina el bug del flotante
 
+FEATURES / CHANGES
+    * Currencies ahora tiene un campo para el simbolo 'sym', ($, u$s, etc)
+    * Agregado monedas dolar y euro
+    * Ahora la gema es multicurrency funcional:
+        El método 'balance' ahora devuelve un hash {ID_CURRENCY => AMOUNT, ID_CURRENCY => AMOUNT}
+    * IMPORTANTE!!! El método 'SnapplerContable.op' en versiones viejas va a fallar, ya que en esta Version cambia como recive
+    los parámetros
+        Ejemplo:
+            Version Vieja: 
+                SnapplerContable.op(array_debe, array_haber, operation_debe = nil, operation_haber = nil)
+            
+            Version Actual: 
+                SnapplerContable.op(array_debe, array_haber, params_hash => {:operation_debe => nil, :operation_haber => nil, :date => nil})
+
+        Agregado el campo date a la operacion para buscar entre esa fecha y no con el 'created_at' de antes
 
 
 

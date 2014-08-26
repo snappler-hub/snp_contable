@@ -1,7 +1,8 @@
 class LedgerAccount < ActiveRecord::Base
   #--------------------------------------------- RELATIION
+  has_many :ledger_moves, :dependent => :destroy
   belongs_to :contable, polymorphic: true
-  has_many :child_ledger_accounts, :class_name => "LedgerAccount", :foreign_key => "master_ledger_account_id", :order => 'order_column'
+  has_many :child_ledger_accounts, :class_name => "LedgerAccount", :foreign_key => "master_ledger_account_id", :order => 'order_column', :dependent => :destroy
   belongs_to :master_ledger_account, :class_name => "LedgerAccount" 
   #--------------------------------------------- MISC
   attr_accessible :name, :code, :code_name, :master_ledger_account_id, :master_ledger_account, :contable, :balance_sum
@@ -11,9 +12,21 @@ class LedgerAccount < ActiveRecord::Base
   #--------------------------------------------- CALLBACK
   before_save :set_code
   after_create :set_order_column
+  #before_destroy :has_no_ledger_moves?
   #--------------------------------------------- SCOPES
   default_scope order('order_column ASC')
   #--------------------------------------------- METHODS
+
+  #Valida q no tenga operaciones de gasto relacionadas
+  def has_no_ledger_moves?
+    if self.ledger_moves.any?
+      self.errors[:base] << "No se pudo borrar porque tiene Movimientos asociados"
+      return false
+    else
+      return true
+    end
+  end
+
 
   def self.account(value)
     where(:code_name => value.to_s.snp_underscore).first
@@ -22,6 +35,17 @@ class LedgerAccount < ActiveRecord::Base
   def add_child(name)
     if self.persisted?    
       self.class.create(name: name, master_ledger_account: self )    
+    else
+      if self.errors.count > 0
+        errores = " La cuenta '#{name}' no se pudo persistir porque sus campos no cumplen la validacion de LedgerAccount."
+      end
+      raise "La instancia debe estar persistida para poder agregar una cuenta hija." + errores.to_s
+    end
+  end
+
+  def add_child_with_contable(name, code_name, contable)
+    if self.persisted?    
+      self.class.create(name: name, master_ledger_account: self, contable: contable, code_name: "#{code_name}_#{contable.class.name.underscore}_#{contable.id}"  )    
     else
       if self.errors.count > 0
         errores = " La cuenta '#{name}' no se pudo persistir porque sus campos no cumplen la validacion de LedgerAccount."
@@ -80,71 +104,154 @@ class LedgerAccount < ActiveRecord::Base
     balance
   end
 
-  def balance
-    bal = LedgerAccount.where(:id => children_accounts_ids).sum(:balance_sum)    
-    LedgerMove.format_value(bal)
+  #Mejora la logica
+  def special_balance(params)
+    from_date = params[:from_date]
+    to_date = params[:to_date]
+    format_value = (params[:format_value].nil?)? true : params[:format_value]
+    
+    if((from_date.nil?) && (to_date.nil?))
+      return balance(format_value)
+    else
+      if((! from_date.nil?) && (! to_date.nil?))
+        return balance_from_to(from_date, to_date, format_value)
+      else
+        if(! from_date.nil?)
+          return balance_from(from_date, format_value)
+        else
+          return balance_to(to_date, format_value)
+        end
+      end
+    end
   end
 
 
-  def balance_to(to_date)
-    dh_hash = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('created_at <= ?', to_date.end_of_day).group(:dh).sum(:value)
-    debe = dh_hash["D"].to_i
-    haber = dh_hash["H"].to_i   
-    LedgerMove.format_value(process_balance(debe, haber))
+  def balance_zero?
+    hash_balance = self.balance
+    zero = true
+    LedgerCurrency.all.each{|x| zero &&= (hash_balance[x.id.to_s].nil?)||(hash_balance[x.id.to_s].zero?) }
+    return zero
   end
 
-  def balance_from(from_date)
-    dh_hash = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('created_at >= ?', from_date.beginning_of_day).group(:dh).sum(:value)
-    debe = dh_hash["D"].to_i
-    haber = dh_hash["H"].to_i   
-    LedgerMove.format_value(process_balance(debe, haber))
+  def balance_zero_or_minor?
+    hash_balance = self.balance
+    zero = true
+    LedgerCurrency.all.each{|x| zero &&= (hash_balance[x.id.to_s].nil?)||(hash_balance[x.id.to_s] <= 0) }
+    return zero
+  end
+
+
+  def balance(format_value=true)
+    bal = {}
+    LedgerAccount.where(:id => children_accounts_ids).each do |account|
+      bal.merge!(eval(account.balance_sum)){|key, oldval, newval| newval + oldval} if(! account.balance_sum.blank?)
+    end
+
+    #Proceso la info para mostrarla en flotante
+    bal.reject!{|x,y| y.zero?}
+    bal.each{|x,y|  bal[x] = LedgerMove::format_value(y) } if(format_value)
+    bal_sorted = {}
+    bal.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
+    return bal_sorted
+  end
+
+
+  def balance_to(to_date, format_value=true)
+    bal_debe = {}
+    bal_haber = {}
+    LedgerCurrency.all.each{|x| bal_debe[x.id] = 0; bal_haber[x.id] = 0}
+    bal = {}
+
+    dh_array = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('date <= ?', to_date)
+    dh_array.each do |dh|
+      bal_debe.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'D')
+      bal_haber.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'H')
+    end
+
+    bal = process_balance(bal_debe, bal_haber)
+    bal.reject!{|x,y| y.zero?}
+    bal.each{|x,y|  bal[x] = LedgerMove::format_value(y) } if(format_value)
+
+    bal_sorted = {}
+    bal.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
+    return bal_sorted
+  end
+
+  def balance_from(from_date, format_value=true)
+    bal_debe = {}
+    bal_haber = {}
+    LedgerCurrency.all.each{|x| bal_debe[x.id] = 0; bal_haber[x.id] = 0}
+    bal = {}
+
+    dh_array = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('date >= ?', from_date)
+    dh_array.each do |dh|
+      bal_debe.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'D')
+      bal_haber.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'H')
+    end
+
+    bal = process_balance(bal_debe, bal_haber)
+    bal.reject!{|x,y| y.zero?}
+    bal.each{|x,y|  bal[x] = LedgerMove::format_value(y) } if(format_value)
+
+    bal_sorted = {}
+    bal.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
+    return bal_sorted
   end  
 
-  def balance_from_to(from_date, to_date)
-    dh_hash = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('created_at >= ? AND created_at <= ?', from_date.beginning_of_day, to_date.end_of_day).group(:dh).sum(:value)
-    debe = dh_hash["D"].to_i
-    haber = dh_hash["H"].to_i   
-    LedgerMove.format_value(process_balance(debe, haber))
+  def balance_from_to(from_date, to_date, format_value=true)
+    bal_debe = {}
+    bal_haber = {}
+    LedgerCurrency.all.each{|x| bal_debe[x.id] = 0; bal_haber[x.id] = 0}
+    bal = {}
+
+    dh_array = LedgerMove.where(:ledger_account_id => children_accounts_ids).where('date >= ? AND date <= ?', from_date, to_date)
+    dh_array.each do |dh|
+      bal_debe.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'D')
+      bal_haber.merge!({dh.ledger_currency_id => dh.raw_value}){|key, oldval, newval| newval + oldval} if(dh.dh == 'H')
+    end
+    bal = process_balance(bal_debe, bal_haber)
+    bal.reject!{|x,y| y.zero?}
+    bal.each{|x,y|  bal[x] = LedgerMove::format_value(y) } if(format_value)
+
+    bal_sorted = {}
+    bal.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
+    return bal_sorted
   end    
+
+
 
   def process_balance
     raise "Este metodo solo se tiene que implementar en las subclases"
   end
 
-  def update_balance(value, dh)
+  def update_balance(value, dh, ledger_currency)
     case dh.upcase
     when 'D'
-      update_balance = process_balance(value, 0)  
+      update_balance = process_balance({ledger_currency.id.to_s => value}, {ledger_currency.id.to_s => 0})  
     when 'H'
-      update_balance = process_balance(0, value)  
-    end   
-    bal = self.balance_sum
-    self.balance_sum = bal + update_balance
-    save
+      update_balance = process_balance({ledger_currency.id.to_s => 0}, {ledger_currency.id.to_s => value})  
+    end
+
+    #Obtengo el Hash
+    balance_sum = (self.balance_sum.blank?)? {} : eval(self.balance_sum)
+    bal = (balance_sum[ledger_currency.id.to_s].nil?)? 0 : balance_sum[ledger_currency.id.to_s]
+    balance_sum[ledger_currency.id.to_s] =  (update_balance[ledger_currency.id.to_s] + bal)
+
+    #Elimino las q son zero asi no queda basura
+    balance_sum.reject!{|x,y| y.zero?}
+    self.balance_sum = balance_sum.to_s
+    self.save
   end
 
-  def update_balance_destroy(value, dh)
+  def update_balance_destroy(value, dh, ledger_currency)
     #inverse operation
     ops = {'D' => 'H', 'H' => 'D'}
-    update_balance(value, ops[dh])
+    update_balance(value, ops[dh], ledger_currency)
   end
 
   def accounts_tree
     SnapplerContable.account_sub_tree(self)
   end                     
-
-  def balance_sum=(val)
-    if val.is_a? Numeric
-      write_attribute :balance_sum, LedgerMove.unformat_value(val)
-    else
-      raise "El valor debe ser un numero"
-    end
-  end
-
-  def balance_sum
-    value_formated = read_attribute :balance_sum
-    LedgerMove.format_value(value_formated)
-  end 
 
 end
 

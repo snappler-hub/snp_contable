@@ -78,7 +78,10 @@ module SnapplerContable
     return res_accounts
   end
 
-  def self.op(array_debe, array_haber, operation_debe = nil, operation_haber = nil)
+  def self.op(array_debe, array_haber, params_hash)
+    operation_debe = params_hash[:operation_debe]
+    operation_haber = params_hash[:operation_haber]
+    date = params_hash[:date]
 
     if operation_haber.nil?
       operation_haber = operation_debe
@@ -117,7 +120,7 @@ module SnapplerContable
         m[:currency] = dc
         m[:currency_ratio] = 1
       end
-      le.ledger_moves.build(ledger_account: m[:account], value: m[:value], dh: m[:dh], ledger_currency: m[:currency], currency_ratio: m[:currency_ratio])
+      le.ledger_moves.build(ledger_account: m[:account], value: m[:value], dh: m[:dh], ledger_currency: m[:currency], currency_ratio: m[:currency_ratio], date: date)
     end
 
     if le.save
