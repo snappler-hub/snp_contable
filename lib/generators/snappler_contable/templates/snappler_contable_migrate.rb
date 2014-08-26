@@ -2,6 +2,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
   def self.up
     create_table :ledger_accounts do |t|
       t.string :name
+      t.integer :balance_sum, :default => 0
       t.string :code
       t.string :code_name
       t.integer :order_column
@@ -24,8 +25,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
       t.references :ledger_entry
       t.references :ledger_account
       t.string :dh, :limit => 1
-      t.integer :value_int, :default => 0
-      t.integer :value_dec, :default => 0
+      t.integer :value, :default => 0
       t.references :ledger_currency
       t.float :currency_ratio
 

@@ -2,15 +2,12 @@
 module SnapplerContable
 
   def self.default_currency=(default_currency)
-    if ActiveRecord::Base.connection.table_exists? 'ledger_currencies'
-      @my_default_currrency = LedgerCurrency.find_by_code(default_currency) 
-    else
-      @my_default_currrency = nil
-    end
+      @my_default_currrency = default_currency
   end
 
   def self.default_currency
-    @my_default_currrency
+    #@my_default_currrency
+    LedgerCurrency.find_by_code(@my_default_currrency)
   end
 
   def self.valid_operations=(operations)
@@ -20,7 +17,7 @@ module SnapplerContable
 
   def self.valid_operations
     @my_valid_operations
-  end 
+  end
 
 
   def self.accounts_tree
@@ -42,7 +39,7 @@ module SnapplerContable
   end
 
   def self.extract_accounts(moves_array, operation, debe_haber)
-    
+
     res_accounts = []
     moves_array.each do |move|
       move[:dh] = debe_haber
@@ -60,16 +57,16 @@ module SnapplerContable
             raise "No se puede extraer la cuenta del objeto #{acc.class.to_s} con operation == nil"
           else
             unless acc.nil?
-              if acc.respond_to? "get_ledger_account_by_operation"                
+              if acc.respond_to? "get_ledger_account_by_operation"
                 move[:account] = acc.get_ledger_account_by_operation(oper)
-                res_accounts << move                                
+                res_accounts << move
               else
                 raise "La clase #{acc.class.to_s} no implementa el modulo contable."
               end
             else
               raise "Se paso como cuenta un objeto Nil"
-            end 
-          end      
+            end
+          end
         end
       else
         raise "El hash de movimiento no tiene :account - #{move}"
@@ -111,7 +108,7 @@ module SnapplerContable
     all_moves.each do |m|
       if m.key? :currency
         if m[:currency].is_a? Numeric
-          m[:currency] = LedgerCurrency.find(m[:currency]) 
+          m[:currency] = LedgerCurrency.find(m[:currency])
         end
         unless m.key? :currency_ratio
           m[:currency_ratio] = 1
@@ -129,6 +126,6 @@ module SnapplerContable
       le.destroy
       raise "Fallo la creacion del movimiento: #{all_moves}"
     end
-  end  
+  end
 
 end

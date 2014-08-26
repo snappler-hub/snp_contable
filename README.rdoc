@@ -232,15 +232,34 @@ De esta forma todos los códigos se reacomodarán.
 
 == Funciones del modelo de cuentas contables (subclases de LedgerAccount)
 
-- cuenta.saldo
-Hace el cálculo del saldo de la cuetna, teniendo en cuenta los movimientos vinculados con dicha cuenta y con todas las cuentas de su sub árbol.
+- cuenta.balance 
+Devuelve el saldo para la cuenta.
+Usa el campo 'balance_sum' que se actualiza en cada LedgerAccount a medida que se agregan movimientos LedgerMoves.
+Cada cuenta tiene su saldo actualizado.
+Para devolverlo se consulta por los saldos de todas las cuentas hijas.
+
+- cuenta.balance_to(to_date)
+Da el saldo calculando con los movimientos hasta  la fecha 'to_date'
+
+- cuenta.balance_from(from_date)
+Da el saldo calculando con los movimientos desde  la fecha 'from_date'
+
+- cuenta.balance_from(from_date)
+Da el saldo calculando con los movimientos desde  la fecha 'from_date' hasta  la fecha 'to_date'
+
+Las funciones de saldo con fecha usan la tabla LedgerMoves de esta forma:
+Hace el cálculo del saldo de la cuenta, teniendo en cuenta los movimientos vinculados con dicha cuenta y con todas las cuentas de su sub árbol.
 El cálculo del saldo va a depender de la clase de la cuenta:
 
     LedgerAccountActivo : debe - haber
     LedgerAccountPasivo : haber - debe
     LedgerAccountPatrimonioNeto : haber - debe
     LedgerAccountResultadoPositivo : haber - debe
-    LedgerAccountResultadoNegativo : debe - haber	
+    LedgerAccountResultadoNegativo : debe - haber
+
+las operacioes cuenta.balance y cuenta.balance_to(fecha del ultimo movimiento registrado) tienen que dar lo mismo.
+
+
 
 - cuenta.accounts_tree
 Devuelve el sub árbol de cuentas que baja desde la cuenta sobre la que se ejecuta el comando
