@@ -4,7 +4,7 @@ class LedgerMove < ActiveRecord::Base
   belongs_to :ledger_account
   belongs_to :ledger_currency  
   #--------------------------------------------- MISC
-  attr_accessible :currency_ratio, :dh, :value, :ledger_account, :ledger_currency, :currency_ratio, :date
+
   DIVISOR = 100.0
   #--------------------------------------------- VALIDATION
 
@@ -14,15 +14,15 @@ class LedgerMove < ActiveRecord::Base
   after_update :update_balance_update
 
   #--------------------------------------------- SCOPES
-  scope :filter_date_start, lambda { |date| if((date)&&(! date.blank?))
-    {:conditions => ["ledger_moves.date >= ?", Date.parse(date)]}
+  scope :filter_date_start, ->(date) { if((date)&&(! date.blank?))
+    where('ledger_moves.date >= :date', date: Date.parse(date))
   end }
 
-  scope :filter_date_end, lambda { |date| if((date)&&(! date.blank?))
-    {:conditions => ["ledger_moves.date <= ?", Date.parse(date)]}
+  scope :filter_date_end, ->(date) { if((date)&&(! date.blank?))
+    where('ledger_moves.date <= :date', date: Date.parse(date))
   end }
 
-  scope :order_date_asc, :order => 'ledger_moves.date ASC, ledger_moves.id ASC'
+  scope :order_date_asc, -> { order('ledger_moves.date ASC, ledger_moves.id ASC')}
 
   #--------------------------------------------- METHODS  
 
@@ -41,26 +41,6 @@ class LedgerMove < ActiveRecord::Base
     self.ledger_account(true).update_balance(raw_value, dh, ledger_currency)
   end
 
-  def self.format_hash(bal)
-    bal_aux = {}
-    bal.each{|x,y|  bal_aux[x] = LedgerMove::format_value(y) }
-
-    bal_sorted = {}
-    bal_aux.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
-
-    return bal_sorted
-  end
-
-  def self.unformat_hash(bal)
-    bal_aux = {}  
-    bal.each{|x,y|  bal_aux[x] = LedgerMove::unformat_value(y) }
-    
-    bal_sorted = {}
-    bal_aux.sort.collect{|elem| bal_sorted[elem.first] = elem.last }
-    
-    return bal_sorted
-  end  
-
 
   def self.format_value(value)
     value / DIVISOR
@@ -78,16 +58,6 @@ class LedgerMove < ActiveRecord::Base
     end
   end
 
-  def currency_with_value(format_value=true)
-    case self.dh.upcase
-    when 'D'
-      bal = self.ledger_account.process_balance({self.ledger_currency_id.to_s => self.raw_value}, {ledger_currency.id.to_s => 0})
-    when 'H'
-      bal = self.ledger_account.process_balance({ledger_currency.id.to_s => 0}, {self.ledger_currency_id.to_s => self.raw_value})
-    end
-    bal = LedgerMove::format_hash(bal) if(format_value)
-    return bal
-  end
 
   def value
     value_formated = read_attribute :value

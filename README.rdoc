@@ -318,8 +318,6 @@ FIXES
 FEATURES / CHANGES
     * Currencies ahora tiene un campo para el simbolo 'sym', ($, u$s, etc)
     * Agregado monedas dolar y euro
-    * Ahora la gema es multicurrency funcional:
-        El método 'balance' ahora devuelve un hash {ID_CURRENCY => AMOUNT, ID_CURRENCY => AMOUNT}
     * IMPORTANTE!!! El método 'SnapplerContable.op' en versiones viejas va a fallar, ya que en esta Version cambia como recive
     los parámetros
         Ejemplo:
@@ -328,6 +326,7 @@ FEATURES / CHANGES
             
             Version Actual: 
                 SnapplerContable.op(array_debe, array_haber, params_hash => {:operation_debe => nil, :operation_haber => nil, :date => nil})
+                EJ: SnapplerContable.op([{account: caja, value: 100.50}],[{account: cc, value: 100.5}],{date: Date.today})
 
         Agregado el campo date a la operacion para buscar entre esa fecha y no con el 'created_at' de antes
 
