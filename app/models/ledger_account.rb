@@ -3,7 +3,7 @@ class LedgerAccount < ActiveRecord::Base
   belongs_to :contable, polymorphic: true
   belongs_to :master_ledger_account, class_name: "LedgerAccount" 
   has_many   :child_ledger_accounts, class_name: "LedgerAccount", foreign_key: "master_ledger_account_id"
-  has_many   :ledger_moves
+  has_many   :ledger_moves, dependent: :destroy
 
   validates :master_ledger_account_id, presence: true
   validates :code_name, uniqueness: true
