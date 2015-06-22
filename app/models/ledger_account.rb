@@ -4,9 +4,11 @@ class LedgerAccount < ActiveRecord::Base
   belongs_to :master_ledger_account, class_name: "LedgerAccount" 
   has_many   :child_ledger_accounts, class_name: "LedgerAccount", foreign_key: "master_ledger_account_id"
   has_many   :ledger_moves, dependent: :destroy
+  belongs_to :owner, polymorphic: true
 
   validates :master_ledger_account_id, presence: true
   validates :code_name, uniqueness: true
+  validates :code_name, uniqueness: {scope: [:owner_id, :owner_type]}
 
   #before_save :set_code
   #after_create :set_order_column

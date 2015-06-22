@@ -8,6 +8,7 @@ class SnapplerContableMigrate < ActiveRecord::Migration
       t.string :code_name
       t.integer :order_column
       t.references :contable, :polymorphic => true
+      t.references :owner, :polymorphic: true
       t.integer :master_ledger_account_id
       t.string :type
 
