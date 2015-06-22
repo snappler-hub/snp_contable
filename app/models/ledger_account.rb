@@ -44,9 +44,9 @@ class LedgerAccount < ActiveRecord::Base
   def add_child(name, code_name=nil)
     if persisted?
       if code_name.nil?
-        self.class.create(name: name, master_ledger_account: self)    
+        self.class.create(owner: self.owner, name: name, master_ledger_account: self)    
       else
-        self.class.create(name: name, code_name: code_name, master_ledger_account: self)    
+        self.class.create(owner: self.owner, name: name, code_name: code_name, master_ledger_account: self)    
       end
     else
       errores = ["La instancia debe estar persistida para poder agregar una cuenta hija."]
