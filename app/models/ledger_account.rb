@@ -7,7 +7,6 @@ class LedgerAccount < ActiveRecord::Base
   belongs_to :owner, polymorphic: true
 
   validates :master_ledger_account_id, presence: true
-  validates :code_name, uniqueness: true
   validates :code_name, uniqueness: {scope: [:owner_id, :owner_type]}
 
   #before_save :set_code
