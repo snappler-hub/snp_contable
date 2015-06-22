@@ -68,7 +68,7 @@ class LedgerAccount < ActiveRecord::Base
 
   def add_child_with_contable(name, code_name, contable)
     if persisted?    
-      self.class.create(name: name, master_ledger_account: self, contable: contable, code_name: "#{code_name}_#{contable.class.name.underscore}_#{contable.id}"  )    
+      self.class.create(owner: self.owner, name: name, master_ledger_account: self, contable: contable, code_name: "#{code_name}_#{contable.class.name.underscore}_#{contable.id}"  )    
     else
       errores = ["La instancia debe estar persistida para poder agregar una cuenta hija."]
       errores << "La cuenta '#{name}' no se pudo persistir porque sus campos no cumplen la validacion de LedgerAccount." if errors.any?
