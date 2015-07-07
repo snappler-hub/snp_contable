@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.version     = SnapplerContable::VERSION
   s.authors     = ["Juan La Battaglia"]
   s.email       = ["juan.labattaglia@snappler.com"]
-  s.homepage    = "www.snappler.com"
+  # s.homepage    = "www.snappler.com"
   s.summary     = "Agrega modelo contable a una aplicacion"
   s.description = "Agrega modelo contable a una aplicacion"
 
