@@ -332,9 +332,7 @@ FEATURES / CHANGES
         Agregado el campo date a la operacion para buscar entre esa fecha y no con el 'created_at' de antes
 
 
-
-
-
+    s=SnapplerContable.op([{account: caja, value: 100.50}],[{account: cc, value: 100}],{date: Date.today})
 
 
 

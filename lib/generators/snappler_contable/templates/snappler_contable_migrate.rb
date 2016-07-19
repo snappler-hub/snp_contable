@@ -2,12 +2,13 @@
 class SnapplerContableMigrate < ActiveRecord::Migration
   def self.up
     create_table :ledger_accounts do |t|
-      t.string :name
-      t.string :balance_sum
+      t.string :internal_name
+      t.integer :balance_sum, default: 0
       t.string :code
       t.string :code_name
       t.integer :order_column
       t.references :contable, :polymorphic => true
+      t.references :owner, polymorphic: true
       t.integer :master_ledger_account_id
       t.string :type
 
